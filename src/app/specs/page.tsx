@@ -4,15 +4,27 @@ import BlurText from '@/components/BlurText';
 import BlurIn from '@/components/BlurIn';
 import RotatingText from '@/components/RotatingText';
 import ScrollStack, { ScrollStackItem } from '@/components/ScrollStack';
-import AuroraBackground from '@/components/AuroraBackground';
+import Prism from '@/components/Prism';
 
 export default function SpecsPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative">
       <Navbar />
 
-      {/* Aurora background — animated blobs */}
-      <AuroraBackground />
+      {/* Prism WebGL Background */}
+      <div className="absolute inset-0 z-0 opacity-60">
+        <Prism
+          animationType="rotate"
+          timeScale={0.2}
+          height={4.0}
+          baseWidth={6.0}
+          scale={3.6}
+          hueShift={0}
+          colorFrequency={1}
+          noise={0.5}
+          glow={1}
+        />
+      </div>
 
       <div className="relative z-10 pt-24 pb-8 px-6 max-w-7xl mx-auto flex flex-col items-center">
 

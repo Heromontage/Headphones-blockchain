@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
-import DotField from './DotField';
+import Grainient from './Grainient';
 import TrueFocus from './TrueFocus';
 
 const features = [
@@ -191,18 +191,23 @@ export default function Projects() {
       id="features"
       className="relative bg-[#0a0a0f] py-32 px-6 md:px-12 lg:px-20 overflow-hidden"
     >
-      {/* Background DotField with enhanced sparkle and waves */}
-      <div className="absolute inset-0 z-0 opacity-80">
-        <DotField
-          dotRadius={1.5}
-          dotSpacing={15}
-          bulgeStrength={80}
-          glowRadius={200}
-          sparkle={true}
-          waveAmplitude={20}
-          gradientFrom="rgba(200, 121, 65, 0.6)" 
-          gradientTo="rgba(26, 58, 58, 0.4)"
-          glowColor="rgba(200, 121, 65, 0.15)"
+      {/* Background Grainient */}
+      <div className="absolute inset-0 z-0 opacity-80 mix-blend-screen">
+        <Grainient
+          color1="#3B82F6"
+          color2="#5227FF"
+          color3="#B497CF"
+          timeSpeed={0.15}
+          colorBalance={0.1}
+          warpStrength={1.5}
+          warpFrequency={3.0}
+          warpSpeed={1.5}
+          warpAmplitude={60.0}
+          blendSoftness={0.15}
+          grainAmount={0.08}
+          grainScale={1.5}
+          contrast={1.3}
+          saturation={1.1}
         />
       </div>
 
