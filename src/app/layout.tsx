@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,7 +44,11 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${outfit.variable} antialiased`}
     >
-      <body className="min-h-screen bg-[#0a0a0f] text-white">{children}</body>
+      <body className="min-h-screen bg-[#0a0a0f] text-white">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }
