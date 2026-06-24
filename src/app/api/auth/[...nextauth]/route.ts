@@ -1,15 +1,12 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 const useDB = prisma !== null;
 
 export const authOptions: NextAuthOptions = {
-  // Only use PrismaAdapter if DB is available, otherwise run JWT-only
-  ...(useDB ? { adapter: PrismaAdapter(prisma as any) as any } : {}),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "mock_client_id",

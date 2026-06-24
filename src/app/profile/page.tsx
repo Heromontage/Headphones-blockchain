@@ -123,7 +123,7 @@ export default async function ProfilePage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Database not connected</h3>
                 <p className="text-white/50 text-sm max-w-sm mx-auto mb-6 leading-relaxed">
-                  Connect a PostgreSQL database by updating the <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">DATABASE_URL</code> in your <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">.env</code> file and running <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">npx prisma db push</code>.
+                  Connect a PostgreSQL database by updating the <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">DATABASE_URL</code> in your <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">.env</code> file.
                 </p>
                 <div className="text-xs text-white/30 bg-white/5 border border-white/10 rounded-xl p-4 text-left font-mono">
                   DATABASE_URL=&quot;postgresql://user:pass@host:5432/db&quot;
