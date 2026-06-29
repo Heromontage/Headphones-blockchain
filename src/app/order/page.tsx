@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Aurora from '@/components/Aurora';
 import BlurIn from '@/components/BlurIn';
-import Image from 'next/image';
 import CircularGallery from '@/components/CircularGallery';
+import AuthModal from '@/components/AuthModal';
 
 const colors = [
   { name: 'Shadow Black', hex: '#111116', image: '/shadow-black.png' },
@@ -19,11 +21,44 @@ const galleryItems = colors.map((c) => ({ image: c.image, text: c.name }));
 
 export default function OrderPage() {
   const [selectedColor, setSelectedColor] = useState('Shadow Black');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const activeIndex = colors.findIndex((c) => c.name === selectedColor);
+  
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const handleCheckout = async () => {
+    if (!session) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemColor: selectedColor, total: 499 }),
+      });
+      
+      if (res.ok) {
+        router.push('/profile');
+      } else {
+        alert('Failed to place order. Please try again.');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred. Please try again.');
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative selection:bg-[#c87941]/30">
       <Navbar />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} defaultMode="signup" />
       
       {/* WebGL Aurora Background */}
       <div className="absolute inset-0 z-0 opacity-80 pointer-events-none">
@@ -124,8 +159,12 @@ export default function OrderPage() {
                 </div>
               </div>
 
-              <button className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] hover:shadow-[0_0_30px_rgba(200,121,65,0.5)] active:scale-[0.98]">
-                Complete Order
+              <button 
+                onClick={handleCheckout}
+                disabled={loading}
+                className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] hover:shadow-[0_0_30px_rgba(200,121,65,0.5)] active:scale-[0.98] disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Complete Order'}
               </button>
               
               <div className="mt-6 flex items-center justify-center gap-2 text-white/40 text-sm">

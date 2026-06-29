@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { query } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,17 +13,13 @@ export default async function ProfilePage() {
   }
 
   let orders: any[] = [];
-  const dbAvailable = prisma !== null;
+  let dbAvailable = false;
 
-  if (dbAvailable) {
-    try {
-      orders = await (prisma as any).order.findMany({
-        where: { userId: (session.user as any).id },
-        orderBy: { createdAt: "desc" },
-      });
-    } catch (error) {
-      console.error("DB query failed:", error);
-    }
+  try {
+    orders = await query('SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC', [(session.user as any).id]) as any[];
+    dbAvailable = true;
+  } catch (error) {
+    console.error("DB query failed:", error);
   }
 
   const userName = session.user?.name || session.user?.email?.split("@")[0] || "Aether User";
@@ -123,11 +119,8 @@ export default async function ProfilePage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Database not connected</h3>
                 <p className="text-white/50 text-sm max-w-sm mx-auto mb-6 leading-relaxed">
-                  Connect a PostgreSQL database by updating the <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">DATABASE_URL</code> in your <code className="text-[#c87941] bg-[#c87941]/10 px-1 rounded">.env</code> file.
+                  Make sure your MySQL database is running and connected via Docker.
                 </p>
-                <div className="text-xs text-white/30 bg-white/5 border border-white/10 rounded-xl p-4 text-left font-mono">
-                  DATABASE_URL=&quot;postgresql://user:pass@host:5432/db&quot;
-                </div>
               </div>
             ) : orders.length === 0 ? (
               /* No orders yet */

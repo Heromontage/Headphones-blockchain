@@ -1,17 +1,18 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
+import { query, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
-const useDB = prisma !== null;
+// Initialize database on startup
+initDb();
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "mock_client_id",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "mock_client_secret",
-      // Skip if no real keys provided
       ...((!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID === "your_google_client_id") 
         ? { authorization: { params: { prompt: "select_account" } } } 
         : {}),
@@ -28,31 +29,26 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing email or password");
         }
 
-        // If no DB, use a mock user for dev purposes
-        if (!useDB) {
-          if (credentials.password === "password123") {
-            return {
-              id: "mock-user-1",
-              name: credentials.email.split("@")[0],
-              email: credentials.email,
-              image: null,
-            };
+        try {
+          const users = await query('SELECT * FROM users WHERE email = ?', [credentials.email]) as any[];
+          const user = users && users.length > 0 ? users[0] : null;
+
+          if (!user || !user.password) {
+            throw new Error("No account found with this email");
           }
-          throw new Error("Wrong password. (Dev mode: use 'password123')");
+
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) throw new Error("Invalid password");
+
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: null,
+          };
+        } catch (error: any) {
+          throw new Error(error.message || "Login failed");
         }
-
-        const user = await (prisma as any).user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user || !user.password) {
-          throw new Error("No account found with this email");
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) throw new Error("Invalid password");
-
-        return user;
       },
     }),
     CredentialsProvider({
@@ -72,26 +68,26 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid OTP. (Dev mode: use '123456')");
         }
 
-        if (!useDB) {
+        try {
+          const users = await query('SELECT * FROM users WHERE phone = ?', [credentials.phone]) as any[];
+          let user = users && users.length > 0 ? users[0] : null;
+
+          if (!user) {
+            const id = crypto.randomUUID();
+            const name = `User (${credentials.phone})`;
+            await query('INSERT INTO users (id, name, phone, orders_placed) VALUES (?, ?, ?, 0)', [id, name, credentials.phone]);
+            user = { id, name, phone: credentials.phone };
+          }
+
           return {
-            id: `phone-${credentials.phone}`,
-            name: `User (${credentials.phone})`,
-            email: null,
+            id: user.id,
+            name: user.name,
+            email: user.email || null,
             image: null,
           };
+        } catch (error: any) {
+          throw new Error(error.message || "Login failed");
         }
-
-        let user = await (prisma as any).user.findUnique({
-          where: { phone: credentials.phone },
-        });
-
-        if (!user) {
-          user = await (prisma as any).user.create({
-            data: { phone: credentials.phone, name: `User (${credentials.phone})` },
-          });
-        }
-
-        return user;
       },
     }),
   ],

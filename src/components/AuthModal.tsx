@@ -16,6 +16,7 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: AuthModalProps) {
   const [tab, setTab] = useState<Tab>('email');
   const [mode, setMode] = useState<Mode>(defaultMode);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,7 +29,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
     setError('');
     setLoading(false);
     setOtpSent(false);
-    setEmail(''); setPassword(''); setPhone(''); setOtp('');
+    setName(''); setEmail(''); setPassword(''); setPhone(''); setOtp('');
     onClose();
   };
 
@@ -41,6 +42,27 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    if (mode === 'signup') {
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Signup failed');
+          setLoading(false);
+          return;
+        }
+      } catch (err: any) {
+        setError('An unexpected error occurred');
+        setLoading(false);
+        return;
+      }
+    }
+
     const result = await signIn('email-login', {
       email,
       password,
@@ -105,10 +127,10 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
             className="fixed z-50 inset-0 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full max-w-md bg-[#0f0f1a]/95 border border-white/10 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden">
+            <div className="w-full max-w-md bg-[#0f0f1a]/95 border border-white/10 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden max-h-[90vh] flex flex-col">
               
               {/* Header */}
-              <div className="relative px-8 pt-8 pb-6 border-b border-white/10">
+              <div className="relative px-8 pt-8 pb-6 border-b border-white/10 shrink-0">
                 <button
                   onClick={handleClose}
                   className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors text-xl"
@@ -127,7 +149,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
               </div>
 
               {/* Body */}
-              <div className="p-8">
+              <div className="p-8 overflow-y-auto">
                 {/* Google */}
                 <button
                   onClick={handleGoogleSignIn}
@@ -170,6 +192,32 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
                 {/* Email Form */}
                 {tab === 'email' && (
                   <form onSubmit={handleEmailSubmit} className="space-y-4">
+                    {mode === 'signup' && (
+                      <>
+                        <div>
+                          <label className="text-xs text-white/40 uppercase tracking-wider font-medium block mb-2">Full Name</label>
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="John Doe"
+                            required
+                            className="w-full bg-white/5 border border-white/10 focus:border-[#c87941]/50 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 outline-none transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-white/40 uppercase tracking-wider font-medium block mb-2">Phone</label>
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            placeholder="+91 XXXXX XXXXX"
+                            required
+                            className="w-full bg-white/5 border border-white/10 focus:border-[#c87941]/50 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 outline-none transition-colors"
+                          />
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="text-xs text-white/40 uppercase tracking-wider font-medium block mb-2">Email</label>
                       <input
@@ -196,13 +244,15 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-3 rounded-xl text-sm font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-3 rounded-xl text-sm font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     >
-                      {loading ? 'Signing in…' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+                      {loading ? 'Processing…' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
                     </button>
-                    <p className="text-xs text-white/30 text-center">
-                      Dev mode: use any email + password <code className="text-[#c87941]">password123</code>
-                    </p>
+                    {mode === 'signin' && (
+                      <p className="text-xs text-white/30 text-center mt-2">
+                        Dev mode: use any email + password <code className="text-[#c87941]">password123</code>
+                      </p>
+                    )}
                   </form>
                 )}
 
@@ -252,7 +302,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-3 rounded-xl text-sm font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] disabled:opacity-50"
+                        className="w-full bg-[#c87941] hover:bg-[#b06734] text-white py-3 rounded-xl text-sm font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] disabled:opacity-50 mt-2"
                       >
                         {loading ? 'Verifying…' : 'Verify & Sign In'}
                       </button>
@@ -264,7 +314,10 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'signin' }: A
                 <p className="text-center text-sm text-white/40 mt-6">
                   {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
                   <button
-                    onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+                    onClick={() => {
+                      setMode(mode === 'signin' ? 'signup' : 'signin');
+                      setError('');
+                    }}
                     className="text-[#c87941] hover:underline font-medium"
                   >
                     {mode === 'signin' ? 'Sign Up' : 'Sign In'}
