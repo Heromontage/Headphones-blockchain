@@ -9,7 +9,7 @@ function ModeWrapper({
   text,
   htmlCanvasRef,
   modeProps = {},
-}) {
+}: { text?: string, htmlCanvasRef?: any, modeProps?: any }) {
   const ref = useRef<THREE.Mesh>(null);
   const buffer = useFBO();
   const { viewport: vp } = useThree();
@@ -37,7 +37,7 @@ function ModeWrapper({
     
     if (ref.current) {
       easing.damp3(ref.current.position, [destX, destY, 15], 0.15, delta);
-      easing.damp3(ref.current.rotation, [Math.PI / 2 + pointer.y * 0.2, pointer.x * 0.2, 0], 0.15, delta);
+      easing.dampE(ref.current.rotation, [Math.PI / 2 + pointer.y * 0.2, pointer.x * 0.2, 0], 0.15, delta);
     }
 
     gl.setRenderTarget(buffer);

@@ -122,7 +122,9 @@ function OverlayBlock({
 /*  Overlay (default export)                                           */
 /* ------------------------------------------------------------------ */
 
-export default function Overlay({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
+export default function Overlay({ scrollYProgress }: { scrollYProgress?: MotionValue<number> }) {
+  if (!scrollYProgress) return null;
+
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* -------- Hero: 0 % – 15 % -------- */}

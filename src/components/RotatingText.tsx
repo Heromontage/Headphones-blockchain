@@ -59,7 +59,7 @@ export interface RotatingTextProps {
   mainClassName?: string;
   splitLevelClassName?: string;
   elementLevelClassName?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /* ------------------------------------------------------------------ */
@@ -101,7 +101,7 @@ const RotatingText = forwardRef<RotatingTextHandle, RotatingTextProps>(
     };
 
     const elements = useMemo<WordObj[]>(() => {
-      const currentText = texts[currentTextIndex];
+      const currentText = (texts as string[])[currentTextIndex];
 
       if (splitBy === 'characters') {
         const words = currentText.split(' ');

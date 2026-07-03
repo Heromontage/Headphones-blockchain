@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -10,7 +12,7 @@ export default function RewardsDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
+    if (status === 'authenticated' && (session?.user as any)?.id) {
       loadUserData();
     }
   }, [session, status]);
@@ -24,7 +26,7 @@ export default function RewardsDashboard() {
       setBalance(balanceData.balance);
 
       // Fetch user stats from database
-      const userResp = await fetch(`/api/users/${session.user.id}`);
+      const userResp = await fetch(`/api/users/${(session?.user as any)?.id}`);
       if (userResp.ok) {
         const userData = await userResp.json();
         setTotalEarned(userData.total_points_earned || 0);
@@ -32,7 +34,7 @@ export default function RewardsDashboard() {
       }
 
       // Fetch recent redemptions
-      const redemptionsResp = await fetch(`/api/redemptions?userId=${session.user.id}&limit=5`);
+      const redemptionsResp = await fetch(`/api/redemptions?userId=${(session?.user as any)?.id}&limit=5`);
       if (redemptionsResp.ok) {
         const redemptionsData = await redemptionsResp.json();
         setRecentRedemptions(redemptionsData);

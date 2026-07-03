@@ -1,4 +1,5 @@
-import { ethers } from "hardhat";
+import pkg from 'hardhat';
+const { ethers } = pkg;
 
 async function main() {
   const initialSupply = ethers.parseEther("1000000"); // 1,000,000 tokens

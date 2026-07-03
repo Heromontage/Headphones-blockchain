@@ -10,30 +10,30 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract ATPToken is ERC20, Ownable {
     /**
-     * @dev Constructor that gives msg.sender an initial supply of 1,000,000 tokens.
-     * @param initialSupply Initial supply in tokens (will be multiplied by 10 by 10 ** decimals())
+     * @dev Constructor that gives msg.sender an initial supply of tokens.
+     * @param initialSupply Initial supply in wei (smallest unit, 18 decimals)
      */
     constructor(uint256 initialSupply) ERC20("ATP Token", "ATP") Ownable(msg.sender) {
-        _mint(msg.sender, initialSupply * 10 ** decimals());
+        _mint(msg.sender, initialSupply);
     }
 
     /**
      * @dev Mints new tokens and assigns them to `account`.
      * Only callable by the owner.
      * @param account Address to receive the newly minted tokens.
-     * @param amount Amount of tokens to mint (in token units, not wei).
+     * @param amount Amount of tokens to mint (in wei, smallest unit).
      */
     function mint(address account, uint256 amount) public onlyOwner {
-        _mint(account, amount * 10 ** decimals());
+        _mint(account, amount);
     }
 
     /**
      * @dev Burns tokens from `account`.
      * Only callable by the owner.
      * @param account Address whose tokens will be burned.
-     * @param amount Amount of tokens to burn (in token units, not wei).
+     * @param amount Amount of tokens to burn (in wei, smallest unit).
      */
     function burn(address account, uint256 amount) public onlyOwner {
-        _burn(account, amount * 10 ** decimals());
+        _burn(account, amount);
     }
 }

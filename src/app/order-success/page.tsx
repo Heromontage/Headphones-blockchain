@@ -1,39 +1,44 @@
-import { metadata } from './layout';
-import { FetchNextPageQueryKey, axiosInstance } from '@/lib/axios';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+"use client";
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { MotionProps, Variants, motion } from 'framer-motion';
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [orderId, setOrderId] = useState<string>('');
   const [orderData, setOrderData] = useState<any>(null);
   const [pointsEarned, setPointsEarned] = useState<number>(0);
   const [pointsAnimation, setPointsAnimation] = useState<number>(0);
 
   useEffect(() => {
-    // Get order ID from query params or state
-    const params = router.searchParams;
-    const idFromParams = params.get('orderId');
+    // Get order ID from query params
+    const idFromParams = searchParams.get('orderId');
     if (idFromParams) {
       setOrderId(idFromParams);
       loadOrderDetails(idFromParams);
     }
-  }, [router]);
+  }, [searchParams]);
 
   const loadOrderDetails = async (id: string) => {
     try {
-      const response = await axiosInstance.get(`/api/orders/${id}`);
-      setOrderData(response.data);
+      const response = await fetch(`/api/orders/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch order');
+      }
+      const resData = await response.json();
+      setOrderData(resData);
 
       // Extract points earned from order
-      if (response.data.points_earned) {
-        setPointsEarned(parseFloat(response.data.points_earned));
+      if (resData.points_earned) {
+        const earned = parseFloat(resData.points_earned);
+        setPointsEarned(earned);
 
         // Animate the points counter
         setPointsAnimation(0);
         setTimeout(() => {
-          setPointsAnimation(pointsEarned);
+          setPointsAnimation(earned);
         }, 100);
       }
     } catch (error) {
@@ -116,5 +121,13 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading order details...</div>}>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }

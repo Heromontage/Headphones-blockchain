@@ -1,11 +1,13 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import pkg from 'hardhat';
+const { ethers } = pkg;
 
 describe("ATPToken", function () {
   let token;
   let owner;
   let addr1;
   let addr2;
+  let addrs;
   const initialSupply = ethers.parseEther("1000000"); // 1,000,000 tokens
 
   beforeEach(async function () {
@@ -46,13 +48,13 @@ describe("ATPToken", function () {
     const mintAmount = ethers.parseEther("10");
     await expect(
       token.connect(addr1).mint(addr2.address, mintAmount)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
 
     const burnAmount = ethers.parseEther("10");
     // First, mint some tokens to addr1 so we can try to burn from it
     await token.connect(owner).mint(addr1.address, ethers.parseEther("20"));
     await expect(
       token.connect(addr1).burn(addr1.address, burnAmount)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
   });
 });

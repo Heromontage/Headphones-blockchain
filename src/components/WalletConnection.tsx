@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { metaMask, walletConnect } from 'wagmi/connectors';
+import { metaMask } from 'wagmi/connectors';
 
 export default function WalletConnection() {
   const { address, isConnected } = useAccount();
@@ -12,10 +14,7 @@ export default function WalletConnection() {
     setIsConnecting(true);
     try {
       await connectAsync({
-        connectors: [
-          metaMask(),
-          walletConnect({ projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || '' })
-        ]
+        connector: metaMask()
       });
     } catch (error) {
       console.error('Connection error:', error);

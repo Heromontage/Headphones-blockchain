@@ -40,3 +40,7 @@ next-env.d.ts
 *.md
 # ...except README.md
 !README.md
+
+# Hardhat cache
+cache/
+artifacts/

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     const userId = (session.user as any).id;
     const body = await request.json();
-    const { itemColor, total } = '', total } = body;
+    const { itemColor, total } = body;
 
     if (!itemColor || !total) {
       return NextResponse.json({ error: 'Missing order details' }, { status: 400 });
@@ -36,19 +36,18 @@ export async function POST(request: Request) {
     // Mint points for this order (server-to-server call)
     try {
       const pointsPerDollar = parseFloat(process.env.POINTS_PER_DOLLAR || '1');
-     0     const pointsToMint = parseFloat(total) * pointsPerDollar;
+      const pointsToMint = parseFloat(total) * pointsPerDollar;
 
-     1      // Get user's wallet address
-      2      const userResult = await query(
-             4      await query(
-        4        'SELECT wallet_address FROM users WHERE id = ?',
-                7        [userId]
-                4      );
-      B
+      // Get user's wallet address
+      const userResult = await query(
+        'SELECT wallet_address FROM users WHERE id = ?',
+        [userId]
+      ) as any[];
+
       if (userResult.length > 0 && userResult[0].wallet_address) {
         const walletAddress = userResult[0].wallet_address;
 
-        // Import ethers here to避免void issues if not installed
+        // Import ethers here to avoid issues if not installed
         const { ethers } = await import("ethers");
 
         // Connect to blockchain
@@ -76,7 +75,6 @@ export async function POST(request: Request) {
             // Update order with points info
             await query(
               'UPDATE orders SET points_earned = ?, points_tx_hash = ? WHERE id = ?',
-              [',
               [pointsToMint, tx.hash, orderId]
             );
 

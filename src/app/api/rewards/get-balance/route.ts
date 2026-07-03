@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { query } from '@/lib/db';
 import { ethers } from "ethers";
 
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const userResult = await query(
       'SELECT wallet_address FROM users WHERE id = ?',
       [userId]
-    );
+    ) as any[];
 
     if (userResult.length === 0 || !userResult[0].wallet_address) {
       return NextResponse.json({ balance: 0 }, { status: 200 });
