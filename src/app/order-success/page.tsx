@@ -11,6 +11,7 @@ function OrderSuccessContent() {
   const [orderData, setOrderData] = useState<any>(null);
   const [pointsEarned, setPointsEarned] = useState<number>(0);
   const [pointsAnimation, setPointsAnimation] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get order ID from query params
@@ -24,8 +25,17 @@ function OrderSuccessContent() {
   const loadOrderDetails = async (id: string) => {
     try {
       const response = await fetch(`/api/orders/${id}`);
+      if (response.status === 401) {
+        setError('You must be logged in to view this order.');
+        return;
+      }
+      if (response.status === 404) {
+        setError('Order not found. It may have been placed before your account was created.');
+        return;
+      }
       if (!response.ok) {
-        throw new Error('Failed to fetch order');
+        setError('Something went wrong loading your order. Please try again.');
+        return;
       }
       const resData = await response.json();
       setOrderData(resData);
@@ -41,8 +51,9 @@ function OrderSuccessContent() {
           setPointsAnimation(earned);
         }, 100);
       }
-    } catch (error) {
-      console.error('Failed to load order details:', error);
+    } catch (err) {
+      console.error('Failed to load order details:', err);
+      setError('Failed to connect to the server. Please check your connection.');
     }
   };
 
@@ -55,8 +66,23 @@ function OrderSuccessContent() {
     return <div className="p-8">Loading order details...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-md p-8 max-w-md text-center">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Could Not Load Order</h2>
+          <p className="text-gray-500 mb-6">{error}</p>
+          <a href="/" className="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
+            Go Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (!orderData) {
-    return <div className="p-8">Order not found.</div>;
+    return <div className="p-8 text-center text-gray-500">Loading order details...</div>;
   }
 
   return (
