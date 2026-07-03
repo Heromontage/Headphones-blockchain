@@ -1,17 +1,13 @@
-import "hardhat/config";
-import "@nomicfoundation/hardhat-ethers";
-import "dotenv/config";
-
-const { PRIVATE_KEY, SEPOLIA_RPC_URL } = process.env;
+require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-export default {
+module.exports = {
   solidity: "0.8.20",
   networks: {
-    sepolia: {
-      type: "http",
-      url: SEPOLIA_RPC_URL,
-      accounts: [] // TODO: add private key from env when deploying
+    mumbai: {
+      url: process.env.API_URL || "",
+      accounts: process.env.TOKEN_MINTING_PRIVATE_KEY ? [process.env.TOKEN_MINTING_PRIVATE_KEY] : []
     }
   }
 };
