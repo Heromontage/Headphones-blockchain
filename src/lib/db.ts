@@ -55,6 +55,9 @@ export async function initDb() {
     try { await connection.query('ALTER TABLE orders ADD COLUMN eth_amount DECIMAL(36,18) NULL'); } catch(e) {}
     try { await connection.query('ALTER TABLE orders ADD COLUMN usd_to_eth_rate DECIMAL(20,8) NULL'); } catch(e) {}
     try { await connection.query('ALTER TABLE orders ADD COLUMN payment_tx_hash VARCHAR(255) UNIQUE NULL'); } catch(e) {}
+    try { await connection.query('ALTER TABLE orders ADD COLUMN points_earned DECIMAL(20, 2) DEFAULT 0'); } catch(e) {}
+    try { await connection.query('ALTER TABLE orders ADD COLUMN points_tx_hash VARCHAR(255) NULL'); } catch(e) {}
+    try { await connection.query('ALTER TABLE orders ADD COLUMN points_redeemed DECIMAL(20, 2) DEFAULT 0'); } catch(e) {}
 
     // Create redemptions table
     await connection.query(`

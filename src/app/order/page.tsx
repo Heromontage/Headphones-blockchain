@@ -32,6 +32,17 @@ export default function OrderPage() {
   const [quote, setQuote] = useState<{usdPrice: number, ethUsdRate: number, ethAmount: string} | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
 
+  // Points / Rewards State
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const POINTS_TO_DOLLAR = 0.5;
+  const BASE_USD_PRICE = 499;
+  const discount = parseFloat((pointsToRedeem * POINTS_TO_DOLLAR).toFixed(2));
+  const discountedUsdPrice = Math.max(0, BASE_USD_PRICE - discount);
+  // Recalculate ETH in real-time using cached rate from quote
+  const ethUsdRate = quote ? quote.ethUsdRate : 3000;
+  const adjustedEthDisplay = (discountedUsdPrice / ethUsdRate).toFixed(4);
+
   // Address State
   const [address, setAddress] = useState({
     full_name: '',
@@ -43,6 +54,8 @@ export default function OrderPage() {
     country: '',
     phone: ''
   });
+  const [savedAddress, setSavedAddress] = useState<typeof address | null>(null);
+  const [usingSaved, setUsingSaved] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
@@ -70,6 +83,30 @@ export default function OrderPage() {
     }
   }, [session, isConnected]);
 
+  // Fetch saved address
+  useEffect(() => {
+    if (session) {
+      fetch('/api/user/address')
+        .then(res => res.json())
+        .then(data => {
+          if (data.address) setSavedAddress(data.address);
+        })
+        .catch(console.error);
+    }
+  }, [session]);
+
+  // Fetch available points balance
+  useEffect(() => {
+    if (session) {
+      fetch('/api/user/points')
+        .then(res => res.json())
+        .then(data => {
+          if (data.availablePoints !== undefined) setAvailablePoints(data.availablePoints);
+        })
+        .catch(console.error);
+    }
+  }, [session]);
+
   // Sync wallet to backend automatically if connected
   useEffect(() => {
     if (session && isConnected && walletAddress) {
@@ -80,6 +117,18 @@ export default function OrderPage() {
       }).catch(console.error);
     }
   }, [session, isConnected, walletAddress]);
+
+  const applySavedAddress = () => {
+    if (savedAddress) {
+      setAddress(savedAddress);
+      setUsingSaved(true);
+    }
+  };
+
+  const clearAddress = () => {
+    setAddress({ full_name: '', line1: '', line2: '', city: '', state: '', postal_code: '', country: '', phone: '' });
+    setUsingSaved(false);
+  };
 
   const handleCheckout = async () => {
     if (!session) {
@@ -120,11 +169,11 @@ export default function OrderPage() {
       if (!addressRes.ok) throw new Error("Failed to save address");
 
       setStatusText('Creating order...');
-      // 2. Create Order
+      // 2. Create Order (pass points to redeem for discount)
       const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemColor: selectedColor }),
+        body: JSON.stringify({ itemColor: selectedColor, pointsToRedeem }),
       });
       
       const orderData = await orderRes.json();
@@ -273,34 +322,149 @@ export default function OrderPage() {
 
                 {/* Shipping Address */}
                 <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-                  <h3 className="text-sm uppercase tracking-wider text-white/40 font-semibold mb-2">Shipping Address</h3>
-                  <input type="text" placeholder="Full Name" value={address.full_name} onChange={e => setAddress({...address, full_name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                  <input type="text" placeholder="Address Line 1" value={address.line1} onChange={e => setAddress({...address, line1: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                  <input type="text" placeholder="Address Line 2 (Optional)" value={address.line2} onChange={e => setAddress({...address, line2: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input type="text" placeholder="City" value={address.city} onChange={e => setAddress({...address, city: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                    <input type="text" placeholder="State/Province" value={address.state} onChange={e => setAddress({...address, state: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                    <input type="text" placeholder="Postal Code" value={address.postal_code} onChange={e => setAddress({...address, postal_code: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
-                    <input type="text" placeholder="Country" value={address.country} onChange={e => setAddress({...address, country: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm uppercase tracking-wider text-white/40 font-semibold">Shipping Address</h3>
+                    {savedAddress && !usingSaved && (
+                      <button
+                        type="button"
+                        onClick={applySavedAddress}
+                        className="flex items-center gap-1.5 text-xs font-medium text-[#c87941] bg-[#c87941]/10 border border-[#c87941]/30 px-3 py-1.5 rounded-lg hover:bg-[#c87941]/20 transition-all duration-200"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Use saved address
+                      </button>
+                    )}
+                    {usingSaved && (
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 text-xs text-[#7cff67] bg-[#7cff67]/10 border border-[#7cff67]/20 px-2 py-1 rounded-lg">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          Saved address applied
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearAddress}
+                          className="text-xs text-white/40 hover:text-white/70 transition-colors underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <input type="text" placeholder="Phone Number" value={address.phone} onChange={e => setAddress({...address, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white" />
+
+                  {/* Saved address preview banner */}
+                  {savedAddress && !usingSaved && (
+                    <button
+                      type="button"
+                      onClick={applySavedAddress}
+                      className="w-full text-left bg-[#c87941]/5 border border-[#c87941]/20 rounded-xl px-4 py-3 hover:bg-[#c87941]/10 transition-all duration-200 group"
+                    >
+                      <p className="text-xs text-white/40 mb-1 uppercase tracking-widest">Last used address</p>
+                      <p className="text-sm text-white/80 font-medium">{savedAddress.full_name}</p>
+                      <p className="text-xs text-white/50">
+                        {savedAddress.line1}{savedAddress.line2 ? `, ${savedAddress.line2}` : ''}, {savedAddress.city}, {savedAddress.state} {savedAddress.postal_code}, {savedAddress.country}
+                      </p>
+                      <p className="text-xs text-[#c87941] mt-2 group-hover:underline">Click to autofill →</p>
+                    </button>
+                  )}
+
+                  <input type="text" placeholder="Full Name *" value={address.full_name} onChange={e => { setUsingSaved(false); setAddress({...address, full_name: e.target.value}); }} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                  <input type="text" placeholder="Address Line 1 *" value={address.line1} onChange={e => { setUsingSaved(false); setAddress({...address, line1: e.target.value}); }} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                  <input type="text" placeholder="Address Line 2 (Optional)" value={address.line2} onChange={e => setAddress({...address, line2: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="City *" value={address.city} onChange={e => { setUsingSaved(false); setAddress({...address, city: e.target.value}); }} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                    <input type="text" placeholder="State/Province" value={address.state} onChange={e => setAddress({...address, state: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                    <input type="text" placeholder="Postal Code *" value={address.postal_code} onChange={e => { setUsingSaved(false); setAddress({...address, postal_code: e.target.value}); }} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                    <input type="text" placeholder="Country" value={address.country} onChange={e => setAddress({...address, country: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
+                  </div>
+                  <input type="text" placeholder="Phone Number" value={address.phone} onChange={e => setAddress({...address, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#c87941]/50 transition-colors" />
                 </div>
+
+                {/* ── AETHER Points Redemption ── */}
+                {availablePoints > 0 && (
+                  <div className="bg-gradient-to-br from-[#c87941]/10 to-[#5227FF]/5 border border-[#c87941]/30 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">⭐</span>
+                        <span className="text-sm font-semibold text-white">Use AETHER Points</span>
+                      </div>
+                      <span className="text-xs text-white/50 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+                        {availablePoints.toFixed(1)} pts available
+                      </span>
+                    </div>
+
+                    {/* Slider */}
+                    <input
+                      type="range"
+                      min={0}
+                      max={availablePoints}
+                      step={0.5}
+                      value={pointsToRedeem}
+                      onChange={e => setPointsToRedeem(parseFloat(e.target.value))}
+                      className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#c87941] bg-white/10"
+                    />
+
+                    <div className="flex items-center justify-between mt-3 text-xs">
+                      <span className="text-white/40">0 pts</span>
+                      <span className="text-white/40">{availablePoints.toFixed(1)} pts</span>
+                    </div>
+
+                    {/* Quick preset buttons */}
+                    <div className="flex gap-2 mt-3">
+                      {[0, Math.min(1, availablePoints), Math.min(2, availablePoints), availablePoints].filter((v, i, arr) => arr.indexOf(v) === i).map(val => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setPointsToRedeem(val)}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                            pointsToRedeem === val
+                              ? 'bg-[#c87941] text-white'
+                              : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                          }`}
+                        >
+                          {val === 0 ? 'None' : val === availablePoints ? 'All' : `${val} pt`}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Redemption summary */}
+                    {pointsToRedeem > 0 && (
+                      <div className="mt-4 flex items-center justify-between bg-[#7cff67]/5 border border-[#7cff67]/20 rounded-xl px-4 py-2">
+                        <span className="text-xs text-white/60">
+                          Redeeming <span className="text-[#c87941] font-semibold">{pointsToRedeem.toFixed(1)} pts</span>
+                        </span>
+                        <span className="text-sm font-bold text-[#7cff67]">−${discount.toFixed(2)} off</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Price & Checkout */}
                 <div className="pt-6 border-t border-white/10">
                   <div className="flex items-end justify-between mb-4">
                     <div>
                       <p className="text-white/40 text-sm tracking-wider uppercase mb-1">Total Due Today</p>
-                      <p className="text-4xl font-light">${quote?.usdPrice || '...'}</p>
+                      {discount > 0 ? (
+                        <div className="flex items-baseline gap-3">
+                          <p className="text-4xl font-light">${discountedUsdPrice.toFixed(2)}</p>
+                          <p className="text-lg text-white/30 line-through">${BASE_USD_PRICE}</p>
+                        </div>
+                      ) : (
+                        <p className="text-4xl font-light">${BASE_USD_PRICE}</p>
+                      )}
+                      {discount > 0 && (
+                        <p className="text-xs text-[#7cff67] mt-1">
+                          You save ${discount.toFixed(2)} with {pointsToRedeem.toFixed(1)} pts
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       {quoteLoading ? (
                         <p className="text-white/50 text-sm">Fetching live ETH rate...</p>
                       ) : quote ? (
                         <>
-                          <p className="text-[#c87941] text-xl font-medium">{(Number(quote.ethAmount) / 1e18).toFixed(4)} ETH</p>
-                          <p className="text-white/40 text-xs">Rate: 1 ETH = ${quote.ethUsdRate}</p>
-                          <p className="text-green-400 text-xs mt-1">Earn {quote.usdPrice} AETHER Points</p>
+                          <p className="text-[#c87941] text-xl font-medium">{adjustedEthDisplay} ETH</p>
+                          <p className="text-white/40 text-xs">Rate: 1 ETH = ${quote.ethUsdRate.toLocaleString()}</p>
+                          <p className="text-green-400 text-xs mt-1">Earn 1.5 AETHER Points on this order</p>
                         </>
                       ) : null}
                     </div>
@@ -311,13 +475,14 @@ export default function OrderPage() {
                     disabled={loading || quoteLoading || !quote || chainId !== hardhat.id}
                     className="w-full mt-4 bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] hover:shadow-[0_0_30px_rgba(200,121,65,0.5)] active:scale-[0.98] disabled:opacity-50"
                   >
-                    {loading ? statusText || 'Processing...' : chainId !== hardhat.id ? 'Wrong Network' : 'Confirm & Pay with Crypto'}
+                    {loading ? statusText || 'Processing...' : chainId !== hardhat.id ? 'Wrong Network' : `Confirm & Pay ${adjustedEthDisplay} ETH`}
                   </button>
                   <div className="mt-4 flex items-center justify-center gap-2 text-white/40 text-sm">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     Secure on-chain checkout
                   </div>
                 </div>
+
               </div>
             )}
           </BlurIn>

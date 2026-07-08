@@ -93,8 +93,8 @@ export async function POST(
     // 5. Trigger AETHER Points minting logic
     let pointsEarned = 0;
     try {
-      const pointsPerDollar = parseFloat(process.env.POINTS_PER_DOLLAR || '1');
-      pointsEarned = parseFloat(order.total) * pointsPerDollar;
+      // Flat 1.5 points awarded per order
+      pointsEarned = parseFloat(process.env.POINTS_PER_ORDER || '1.5');
 
       // Get user's wallet address
       const userResult = await query(
