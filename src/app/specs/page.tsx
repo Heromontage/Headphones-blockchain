@@ -1,10 +1,14 @@
+'use client';
+
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import BlurText from '@/components/BlurText';
 import BlurIn from '@/components/BlurIn';
 import RotatingText from '@/components/RotatingText';
 import ScrollStack, { ScrollStackItem } from '@/components/ScrollStack';
-import Prism from '@/components/Prism';
+import dynamic from 'next/dynamic';
+
+const Footer = dynamic(() => import('@/components/Footer'));
+const Prism = dynamic(() => import('@/components/Prism'), { ssr: false });
 
 export default function SpecsPage() {
   return (

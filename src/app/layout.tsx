@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import TargetCursor from "@/components/TargetCursor";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -45,6 +46,13 @@ export default function RootLayout({
       className={`${inter.variable} ${outfit.variable} antialiased`}
     >
       <body className="min-h-screen bg-[#0a0a0f] text-white">
+        <TargetCursor 
+          spinDuration={3}
+          hideDefaultCursor={true}
+          parallaxOn={true}
+          cursorColor="#c87941"
+          cursorColorOnTarget="#e09a5f"
+        />
         <Providers>
           {children}
         </Providers>

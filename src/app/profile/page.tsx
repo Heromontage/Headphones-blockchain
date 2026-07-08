@@ -3,7 +3,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { query } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import dynamic from "next/dynamic";
+
+const Footer = dynamic(() => import('@/components/Footer'));
 
 const POINTS_TO_DOLLAR_VALUE = parseFloat(process.env.POINTS_TO_DOLLAR_VALUE || '0.5');
 
@@ -24,7 +26,7 @@ export default async function ProfilePage() {
       [(session.user as any).id]
     ) as any[];
     const userResults = await query(
-      'SELECT total_points_earned FROM users WHERE id = ?',
+      'SELECT total_points_earned, total_points_redeemed FROM users WHERE id = ?',
       [(session.user as any).id]
     ) as any[];
     userRow = userResults[0] || null;
@@ -45,9 +47,9 @@ export default async function ProfilePage() {
       <Navbar />
 
       {/* Background glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[#c87941]/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-[#5227FF]/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-[#7cff67]/3 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[#c87941]/5 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-[#5227FF]/5 rounded-full blur-[100px] pointer-events-none z-0" />
+      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-[#7cff67]/3 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="relative z-10 pt-36 pb-24 px-6 max-w-7xl mx-auto">
 

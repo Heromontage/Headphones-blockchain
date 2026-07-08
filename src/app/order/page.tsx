@@ -9,12 +9,14 @@ import { hardhat } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import Aurora from '@/components/Aurora';
 import BlurIn from '@/components/BlurIn';
-import CircularGallery from '@/components/CircularGallery';
 import AuthModal from '@/components/AuthModal';
 import WalletConnection from '@/components/WalletConnection';
+import dynamic from 'next/dynamic';
+
+const Footer = dynamic(() => import('@/components/Footer'));
+const Aurora = dynamic(() => import('@/components/Aurora'), { ssr: false });
+const CircularGallery = dynamic(() => import('@/components/CircularGallery'), { ssr: false });
 
 const colors = [
   { name: 'Shadow Black', hex: '#111116', image: '/shadow-black.png' },
@@ -213,7 +215,7 @@ export default function OrderPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden relative selection:bg-[#c87941]/30">
+    <main className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden selection:bg-[#c87941]/30">
       <Navbar />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} defaultMode="signup" />
 
@@ -276,7 +278,7 @@ export default function OrderPage() {
                 </p>
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="w-full max-w-xs bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300"
+                  className="cursor-target w-full max-w-xs bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300"
                 >
                   Sign In to Continue
                 </button>
@@ -299,7 +301,7 @@ export default function OrderPage() {
                       <button
                         key={color.name}
                         onClick={() => setSelectedColor(color.name)}
-                        className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        className={`cursor-target relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
                           selectedColor === color.name ? 'scale-110' : 'hover:scale-105 opacity-60 hover:opacity-100'
                         }`}
                       >
@@ -328,7 +330,7 @@ export default function OrderPage() {
                       <button
                         type="button"
                         onClick={applySavedAddress}
-                        className="flex items-center gap-1.5 text-xs font-medium text-[#c87941] bg-[#c87941]/10 border border-[#c87941]/30 px-3 py-1.5 rounded-lg hover:bg-[#c87941]/20 transition-all duration-200"
+                        className="cursor-target flex items-center gap-1.5 text-xs font-medium text-[#c87941] bg-[#c87941]/10 border border-[#c87941]/30 px-3 py-1.5 rounded-lg hover:bg-[#c87941]/20 transition-all duration-200"
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         Use saved address
@@ -343,7 +345,7 @@ export default function OrderPage() {
                         <button
                           type="button"
                           onClick={clearAddress}
-                          className="text-xs text-white/40 hover:text-white/70 transition-colors underline"
+                          className="cursor-target text-xs text-white/40 hover:text-white/70 transition-colors underline"
                         >
                           Clear
                         </button>
@@ -356,7 +358,7 @@ export default function OrderPage() {
                     <button
                       type="button"
                       onClick={applySavedAddress}
-                      className="w-full text-left bg-[#c87941]/5 border border-[#c87941]/20 rounded-xl px-4 py-3 hover:bg-[#c87941]/10 transition-all duration-200 group"
+                      className="cursor-target w-full text-left bg-[#c87941]/5 border border-[#c87941]/20 rounded-xl px-4 py-3 hover:bg-[#c87941]/10 transition-all duration-200 group"
                     >
                       <p className="text-xs text-white/40 mb-1 uppercase tracking-widest">Last used address</p>
                       <p className="text-sm text-white/80 font-medium">{savedAddress.full_name}</p>
@@ -415,7 +417,7 @@ export default function OrderPage() {
                           key={val}
                           type="button"
                           onClick={() => setPointsToRedeem(val)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                          className={`cursor-target flex-1 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
                             pointsToRedeem === val
                               ? 'bg-[#c87941] text-white'
                               : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
@@ -473,7 +475,7 @@ export default function OrderPage() {
                   <button
                     onClick={handleCheckout}
                     disabled={loading || quoteLoading || !quote || chainId !== hardhat.id}
-                    className="w-full mt-4 bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] hover:shadow-[0_0_30px_rgba(200,121,65,0.5)] active:scale-[0.98] disabled:opacity-50"
+                    className="cursor-target w-full mt-4 bg-[#c87941] hover:bg-[#b06734] text-white py-4 rounded-xl text-lg font-medium tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(200,121,65,0.3)] hover:shadow-[0_0_30px_rgba(200,121,65,0.5)] active:scale-[0.98] disabled:opacity-50"
                   >
                     {loading ? statusText || 'Processing...' : chainId !== hardhat.id ? 'Wrong Network' : `Confirm & Pay ${adjustedEthDisplay} ETH`}
                   </button>

@@ -1,8 +1,13 @@
+'use client';
+
 import Navbar from "@/components/Navbar";
-import ScrollyCanvas from "@/components/ScrollyCanvas";
 import Overlay from "@/components/Overlay";
-import Projects from "@/components/Projects";
-import Footer from "@/components/Footer";
+import dynamic from "next/dynamic";
+
+// Lazy load heavy WebGL and below-the-fold components
+const ScrollyCanvas = dynamic(() => import("@/components/ScrollyCanvas"), { ssr: false });
+const Projects = dynamic(() => import("@/components/Projects"));
+const Footer = dynamic(() => import("@/components/Footer"));
 
 export default function Home() {
   return (

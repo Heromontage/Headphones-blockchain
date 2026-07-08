@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Grainient from './Grainient';
 import TrueFocus from './TrueFocus';
+import BorderGlow from './BorderGlow';
 
 const features = [
   {
@@ -133,15 +134,6 @@ const features = [
 ];
 
 function FeatureCard({ feature, index }: { feature: any; index: number }) {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
-    const { left, top } = currentTarget.getBoundingClientRect();
-    mouseX.set(clientX - left);
-    mouseY.set(clientY - top);
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -152,35 +144,36 @@ function FeatureCard({ feature, index }: { feature: any; index: number }) {
         ease: 'easeOut',
         delay: index * 0.1,
       }}
-      onMouseMove={handleMouseMove}
-      className="group relative rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-8 overflow-hidden transition-colors hover:border-white/[0.15] cursor-pointer"
+      className="group h-full transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] cursor-pointer"
     >
-      {/* Dynamic spotlight background */}
-      <motion.div
-        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100"
-        style={{
-          background: useMotionTemplate`
-            radial-gradient(
-              400px circle at ${mouseX}px ${mouseY}px,
-              rgba(200, 121, 65, 0.15),
-              transparent 80%
-            )
-          `,
-        }}
-      />
-      
-      {/* Content */}
-      <div className="relative z-10">
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#c87941]/20 to-transparent border border-[#c87941]/30 text-[#c87941] shadow-[0_0_20px_rgba(200,121,65,0.1)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-          {feature.icon}
+      <BorderGlow
+        edgeSensitivity={30}
+        glowColor="25 60 50"
+        backgroundColor="rgba(0, 0, 0, 0.4)"
+        borderRadius={16}
+        glowRadius={30}
+        glowIntensity={1.2}
+        coneSpread={25}
+        animated={true}
+        colors={['#c87941', '#e09a5f', '#ffb875']}
+        fillOpacity={0.4}
+        className="h-full backdrop-blur-xl"
+      >
+        <div className="p-8 h-full">
+          {/* Content */}
+          <div className="relative z-10">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#c87941]/20 to-transparent border border-[#c87941]/30 text-[#c87941] shadow-[0_0_20px_rgba(200,121,65,0.1)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+              {feature.icon}
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3 transition-colors duration-300 group-hover:text-[#e09a5f]">
+              {feature.title}
+            </h3>
+            <p className="text-sm leading-relaxed text-white/60">
+              {feature.description}
+            </p>
+          </div>
         </div>
-        <h3 className="text-xl font-semibold text-white mb-3 transition-colors duration-300 group-hover:text-[#e09a5f]">
-          {feature.title}
-        </h3>
-        <p className="text-sm leading-relaxed text-white/60">
-          {feature.description}
-        </p>
-      </div>
+      </BorderGlow>
     </motion.div>
   );
 }
