@@ -21,19 +21,11 @@ export async function GET(
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    // First try to find by id AND userId (most secure)
-    let result = await query(
+    // Fetch order by id AND userId (secure)
+    const result = await query(
       'SELECT * FROM orders WHERE id = ? AND userId = ?',
       [id, userId]
     ) as any[];
-
-    // Fallback: find just by id (in case session userId format differs)
-    if (!result || result.length === 0) {
-      result = await query(
-        'SELECT * FROM orders WHERE id = ?',
-        [id]
-      ) as any[];
-    }
 
     if (!result || result.length === 0) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });

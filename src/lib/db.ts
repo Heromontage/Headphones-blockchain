@@ -14,7 +14,7 @@ export async function initDb() {
   try {
     const connection = await pool.getConnection();
 
-    // Create users table with new columns
+    // Create users table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(255) PRIMARY KEY,
@@ -31,7 +31,12 @@ export async function initDb() {
       )
     `);
 
-    // Create orders table with new columns
+    // Add new columns to users table if they don't exist
+    try { await connection.query('ALTER TABLE users ADD COLUMN wallet_connected BOOLEAN DEFAULT false'); } catch(e) {}
+    try { await connection.query('ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false'); } catch(e) {}
+    try { await connection.query('ALTER TABLE users ADD COLUMN shipping_address JSON NULL'); } catch(e) {}
+
+    // Create orders table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id VARCHAR(255) PRIMARY KEY,
@@ -45,6 +50,11 @@ export async function initDb() {
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+
+    // Add new columns to orders table if they don't exist
+    try { await connection.query('ALTER TABLE orders ADD COLUMN eth_amount DECIMAL(36,18) NULL'); } catch(e) {}
+    try { await connection.query('ALTER TABLE orders ADD COLUMN usd_to_eth_rate DECIMAL(20,8) NULL'); } catch(e) {}
+    try { await connection.query('ALTER TABLE orders ADD COLUMN payment_tx_hash VARCHAR(255) UNIQUE NULL'); } catch(e) {}
 
     // Create redemptions table
     await connection.query(`

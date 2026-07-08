@@ -38,9 +38,14 @@ next-env.d.ts
 
 # Ignore all markdown files...
 *.md
-# ...except README.md
+# ...except README.md and other project docs
 !README.md
+!wallet-checkout-spec.md
+!AGENTS.md
 
+# Ignore AI assistant directories
+.claude/
+.gemini/
 # Hardhat cache
 cache/
 artifacts/

@@ -12,19 +12,46 @@ export async function POST(request: Request) {
     }
 
     const userId = (session.user as any).id;
-    const body = await request.json();
-    const { itemColor, total } = body;
+    
+    // Check if wallet is connected
+    const userResult = await query('SELECT wallet_connected FROM users WHERE id = ?', [userId]) as any[];
+    if (!userResult.length || !userResult[0].wallet_connected) {
+      return NextResponse.json({ error: 'Wallet not connected' }, { status: 403 });
+    }
 
-    if (!itemColor || !total) {
+    const body = await request.json();
+    const { itemColor } = body; // Don't trust total from client
+
+    if (!itemColor) {
       return NextResponse.json({ error: 'Missing order details' }, { status: 400 });
     }
 
     const orderId = crypto.randomUUID();
+    
+    // Fetch quote from our own API or logic
+    // We'll reproduce the quote logic here to be safe and autonomous
+    const usdPrice = 499;
+    let ethUsdRate = 3000;
+    try {
+      const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ethereum && data.ethereum.usd) {
+          ethUsdRate = data.ethereum.usd;
+        }
+      }
+    } catch (err) {}
 
-    // Create order
+    const ethAmount = usdPrice / ethUsdRate;
+    
+    // Import ethers dynamically to avoid issues
+    const { ethers } = await import("ethers");
+    const ethAmountInWei = ethers.parseUnits(ethAmount.toFixed(18), 18).toString();
+
+    // Create order with status AWAITING_PAYMENT
     await query(
-      'INSERT INTO orders (id, userId, itemColor, status, total) VALUES (?, ?, ?, ?, ?)',
-      [orderId, userId, itemColor, 'PENDING', total]
+      'INSERT INTO orders (id, userId, itemColor, status, total, eth_amount, usd_to_eth_rate) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [orderId, userId, itemColor, 'AWAITING_PAYMENT', usdPrice, ethAmount, ethUsdRate]
     );
 
     // Update user's order count
@@ -33,65 +60,16 @@ export async function POST(request: Request) {
       [userId]
     );
 
-    // Mint points for this order (server-to-server call)
-    try {
-      const pointsPerDollar = parseFloat(process.env.POINTS_PER_DOLLAR || '1');
-      const pointsToMint = parseFloat(total) * pointsPerDollar;
+    // Developer Wallet address to pay to (Hardhat account 1 usually, or specific address)
+    // Here we'll use a hardcoded DEV address or from env
+    const devWalletAddress = process.env.DEV_WALLET_ADDRESS || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
 
-      // Get user's wallet address
-      const userResult = await query(
-        'SELECT wallet_address FROM users WHERE id = ?',
-        [userId]
-      ) as any[];
-
-      if (userResult.length > 0 && userResult[0].wallet_address) {
-        const walletAddress = userResult[0].wallet_address;
-
-        // Import ethers here to avoid issues if not installed
-        const { ethers } = await import("ethers");
-
-        // Connect to blockchain
-        const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_NETWORK_RPC_URL);
-        const privateKey = process.env.TOKEN_MINTING_PRIVATE_KEY;
-        if (!privateKey) {
-          console.warn('Token minting private key not configured - skipping points minting');
-        } else {
-          const wallet = new ethers.Wallet(privateKey, provider);
-
-          // Get contract instance
-          const contractAddress = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS;
-          if (contractAddress) {
-            // Simple ERC20 ABI for mint function
-            const abi = ["function mint(address to, uint256 amount) external"];
-            const contract = new ethers.Contract(contractAddress, abi, wallet);
-
-            // Convert points to wei (18 decimals)
-            const amountInWei = ethers.parseUnits(pointsToMint.toString(), 18);
-
-            // Execute mint transaction
-            const tx = await contract.mint(walletAddress, amountInWei);
-            const receipt = await tx.wait();
-
-            // Update order with points info
-            await query(
-              'UPDATE orders SET points_earned = ?, points_tx_hash = ? WHERE id = ?',
-              [pointsToMint, tx.hash, orderId]
-            );
-
-            // Update user's total points earned
-            await query(
-              'UPDATE users SET total_points_earned = total_points_earned + ? WHERE id = ?',
-              [pointsToMint, userId]
-            );
-          }
-        }
-      }
-    } catch (mintError) {
-      console.warn('Failed to mint points for order:', mintError);
-      // Continue anyway - order is still valid
-    }
-
-    return NextResponse.json({ success: true, orderId }, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      orderId,
+      ethAmount: ethAmountInWei,
+      devWalletAddress 
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Order creation error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
