@@ -120,45 +120,73 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
     [],
   );
 
-  /* ---- Preload all frames ---- */
+  /* ---- Preload frames lazily ---- */
   useEffect(() => {
     let cancelled = false;
     const images: HTMLImageElement[] = new Array(FRAME_COUNT);
     let loaded = 0;
+    const INITIAL_LOAD_COUNT = Math.min(FRAME_COUNT, 10);
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
+    const loadImageIfNeeded = (index: number) => {
+      if (cancelled) return;
+      if (images[index]) return; // Already loading or loaded
+      
       const img = new Image();
       img.decoding = 'async';
-      img.src = getFrameSrc(i);
-
+      img.src = getFrameSrc(index);
+      
+      // Set image in array immediately so we don't try to load it again
+      images[index] = img;
+      imagesRef.current = images; // update ref so render loop can access it
+      
       img.onload = () => {
         if (cancelled) return;
         loaded += 1;
         setLoadedCount(loaded);
-        if (loaded === FRAME_COUNT) {
+        if (loaded >= INITIAL_LOAD_COUNT) {
           setAllLoaded(true);
         }
       };
-
+      
       img.onerror = () => {
         if (cancelled) return;
-        // Count errors as "loaded" so the bar still completes.
         loaded += 1;
         setLoadedCount(loaded);
-        if (loaded === FRAME_COUNT) {
+        if (loaded >= INITIAL_LOAD_COUNT) {
           setAllLoaded(true);
         }
       };
-
-      images[i] = img;
+    };
+    
+    // Initial load for first few images
+    for (let i = 0; i < INITIAL_LOAD_COUNT; i++) {
+      loadImageIfNeeded(i);
     }
-
-    imagesRef.current = images;
-
+    
+    // Load more images as we scroll
+    const handleScroll = () => {
+      const currentIndex = currentFrameRef.current;
+      // Load a buffer of images around the current index
+      const start = Math.max(0, currentIndex - 10);
+      const end = Math.min(FRAME_COUNT - 1, currentIndex + 10);
+      for (let i = start; i <= end; i++) {
+        loadImageIfNeeded(i);
+      }
+    };
+    
+    // Initial call
+    handleScroll();
+    
+    // Listen to scroll changes
+    const unsubscribe = scrollYProgress.on('change', () => {
+      handleScroll();
+    });
+    
     return () => {
       cancelled = true;
+      unsubscribe();
     };
-  }, []);
+  }, [scrollYProgress]);
 
   /* ---- Canvas render loop + resize observer ---- */
   useEffect(() => {
@@ -184,6 +212,9 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
 
     /* Render loop */
     let running = true;
+    let lastRenderedIdx = -1;
+    let lastCanvasWidth = 0;
+    let lastCanvasHeight = 0;
 
     const render = () => {
       if (!running) return;
@@ -191,10 +222,19 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
       const images = imagesRef.current;
       const idx = currentFrameRef.current;
       const img = images[idx];
+      
+      // Check if we need to redraw
+      const rect = container.getBoundingClientRect();
+      const needsRedraw = idx !== lastRenderedIdx || 
+                          rect.width !== lastCanvasWidth || 
+                          rect.height !== lastCanvasHeight;
 
-      if (img && img.complete && img.naturalWidth > 0) {
-        const rect = container.getBoundingClientRect();
+      if (needsRedraw && img && img.complete && img.naturalWidth > 0) {
         drawCover(ctx, img, rect.width, rect.height);
+        lastRenderedIdx = idx;
+        lastCanvasWidth = rect.width;
+        lastCanvasHeight = rect.height;
+        canvas.dataset.dirty = 'true';
       }
 
       rafIdRef.current = requestAnimationFrame(render);
@@ -216,7 +256,8 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
   }, [drawCover]);
 
   /* ---- Render ---- */
-  const progress = loadedCount / FRAME_COUNT;
+  const INITIAL_LOAD_COUNT = Math.min(FRAME_COUNT, 10);
+  const progress = loadedCount / INITIAL_LOAD_COUNT;
 
   return (
     <>

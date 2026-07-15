@@ -21,12 +21,14 @@ function ModeWrapper({
       const tex = new THREE.CanvasTexture(htmlCanvasRef.current);
       tex.minFilter = THREE.LinearFilter;
       setCanvasTex(tex);
+      htmlCanvasRef.current.dataset.dirty = 'true';
     }
   }, [htmlCanvasRef]);
 
   useFrame((state, delta) => {
-    if (canvasTex && htmlCanvasRef?.current) {
+    if (canvasTex && htmlCanvasRef?.current && htmlCanvasRef.current.dataset.dirty === 'true') {
       canvasTex.needsUpdate = true;
+      htmlCanvasRef.current.dataset.dirty = 'false';
     }
 
     const { gl, viewport, pointer, camera } = state;
@@ -90,7 +92,7 @@ function ModeWrapper({
       )}
 
       <mesh ref={ref} scale={scale ?? 2}>
-        <cylinderGeometry args={[1, 1, 0.1, 64]} />
+        <cylinderGeometry args={[1, 1, 0.1, 32]} />
         <MeshTransmissionMaterial
           buffer={buffer.texture}
           ior={ior ?? 1.15}
